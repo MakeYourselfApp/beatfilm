@@ -1,0 +1,11 @@
+{
+  "name": "beatfilm",
+  "version": "0.1.0",
+  "description": "Render HTML canvas animations to MP4, frame by frame, cut to the beat.",
+  "license": "MIT",
+  "private": true,
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "hello": "node tools/capture.js examples/hello/film.html out/hello-silent.mp4 60 && node tools/sound.js examples/hello && node tools/mux.js out/hello-silent.mp4 examples/hello/audio.wav out/hello.mp4"
+  }
+}

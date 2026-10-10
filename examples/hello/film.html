@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>beatfilm hello</title>
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block;width:1080px;height:1920px}</style>
+</head><body><canvas id="c"></canvas>
+<script src="../../engine/engine.js"></script>
+<script src="cues.js"></script>
+<script>
+// Open this file in a browser to watch it loop, or render it with tools/capture.js.
+const { W, H, C, clamp, lerp, seg, E, ease, rnd, text, rrect, hud, vignette, textPoints, shuffle, sliceGlitch, dust, shock, cueFx, camera } = BF;
+const { BPM, BEATS, CUES } = window.FILMCUES;
+const CX = W / 2, CY = H / 2;
+const WORDS = ['EVERY', 'FRAME', 'IS', 'CODE.'];
+const BARS = [0.35, 0.55, 0.72, 1];
+
+Film({
+  bpm: BPM, beats: BEATS,
+  setup() { return { pts: shuffle(textPoints('ON THE BEAT', 150, { step: 6 })) }; },
+  draw(ctx, t, b, { state }) {
+    const fx = cueFx(b, CUES);
+    ctx.save(); camera(ctx, t, fx);
+    dust(ctx, t, { alpha: 0.35 });
+
+    // 0-4: one word per beat, each slams in and the previous one drops away
+    if (b < 4) {
+      const i = Math.floor(b), p = b - i;
+      const s = lerp(1.6, 1, ease(p, 0, 0.25));
+      ctx.save(); ctx.translate(CX, CY); ctx.scale(s, s);
+      text(ctx, WORDS[i], 0, 60, { size: i === 3 ? 300 : 260, color: i === 3 ? C.red : C.fg, alpha: 1 - ease(p, 0.8, 1, E.inCubic) });
+      ctx.restore();
+    }
+
+    // 4-8: a bar grows on every beat while a counter runs up
+    if (b >= 4 && b < 8) {
+      const out = 1 - ease(b, 7.7, 8, E.inCubic);
+      BARS.forEach((v, i) => {
+        const g = ease(b, 4 + i, 4.6 + i, E.spring), h = 900 * v * g, x = 150 + i * 205;
+        ctx.fillStyle = i === 3 ? C.red : C.fg; ctx.globalAlpha = out; rrect(ctx, x, 1400 - h, 165, h, 20); ctx.fill(); ctx.globalAlpha = 1;
+      });
+      text(ctx, String(Math.round(100 * ease(b, 4, 7.5, E.outCubic))) + '%', CX, 1620, { size: 170, alpha: out });
+    }
+
+    // 8-12: particles fly in and settle into a sentence
+    if (b >= 8 && b < 12) {
+      const out = 1 - ease(b, 11.6, 12, E.inCubic);
+      shock(ctx, CX, CY, seg(b, 8, 9), { r: 1100 });
+      ctx.fillStyle = C.fg; ctx.globalAlpha = out;
+      state.pts.forEach((pt, i) => {
+        const p = ease(b, 8 + rnd(i) * 0.6, 9.6 + rnd(i) * 0.6, E.outExpo), a = rnd(i + 3) * 6.283, r = 1400 * (1 - p);
+        ctx.fillRect(pt.x + Math.cos(a) * r, CY + pt.y + Math.sin(a) * r, 5, 5);
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    // 12-16: end card
+    if (b >= 12) {
+      text(ctx, 'beatfilm', CX, CY, { size: 230, reveal: ease(b, 12, 12.8) });
+      text(ctx, 'HTML in. MP4 out.', CX, CY + 130, { size: 62, w: 400, color: C.mute, alpha: ease(b, 13, 13.6) });
+      hud(ctx, t, { code: 'HELLO—001', footL: 'RENDERED FRAME BY FRAME', footR: BPM + ' BPM', alpha: ease(b, 13, 14) });
+    }
+    ctx.restore();
+    sliceGlitch(ctx, fx.gl, Math.floor(t * 60));
+    vignette(ctx, 0.5);
+  },
+});
+</script></body></html>
